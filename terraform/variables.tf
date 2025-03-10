@@ -1,5 +1,5 @@
 variable "project_id" {
-  description = "Google Cloud Project ID"
+  description = "trade-finance-452012"
   type        = string
   default     = "trade-finance-452012"
 }
