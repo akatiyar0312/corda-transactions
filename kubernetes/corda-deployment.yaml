@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: corda
+  labels:
+    app: corda
+spec:
+  replicas: 2  # Start with 2 nodes
+  selector:
+    matchLabels:
+      app: corda
+  template:
+    metadata:
+      labels:
+        app: corda
+    spec:
+      containers:
+      - name: corda
+        image: corda/corda-os-combined-worker-kafka:5.2.0.0
+        ports:
+        - containerPort: 8888
+        - containerPort: 7004
+        env:
+        - name: JAVA_TOOL_OPTIONS
+          value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+        - name: LOG4J_CONFIG_FILE
+          value: "/config/log4j2.xml"
+        - name: CONSOLE_LOG_LEVEL
+          value: "info"
+        - name: ENABLE_LOG4J2_DEBUG
+          value: "false"
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service:9092"
+        - name: DATABASE_URL
+          value: "jdbc:postgresql://postgres-service:5432/cordacluster"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+        - name: logs-volume
+          mountPath: /logs
+      volumes:
+      - name: config-volume
+        persistentVolumeClaim:
+          claimName: corda-config-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: corda-logs-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: corda-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8888
+      targetPort: 8888
+    - port: 7004
+      targetPort: 7004
+  selector:
+    app: corda
