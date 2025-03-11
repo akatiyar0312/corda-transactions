@@ -55,9 +55,11 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 8888
+    - name: corda-http
+      port: 8888
       targetPort: 8888
-    - port: 7004
+    - name: corda-rpc
+      port: 7004
       targetPort: 7004
   selector:
     app: corda
