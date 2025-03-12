@@ -13,33 +13,26 @@ spec:
         app: postgresql
     spec:
       containers:
-      - name: postgresql
-        image: postgres:14.10
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_USER
-          value: "postgres"
-        - name: POSTGRES_PASSWORD
-          value: "password"
-        - name: POSTGRES_DB
-          value: "cordacluster"
-        volumeMounts:
-        - mountPath: "/var/lib/postgresql/data"
-          name: postgresql-storage
-      volumes:
-      - name: postgresql-storage
-        persistentVolumeClaim:
-          claimName: postgresql-pvc
-
+        - name: postgresql
+          image: postgres:14.10
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "password"
+            - name: POSTGRES_DB
+              value: "cordacluster"
+          ports:
+            - containerPort: 5432
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgresql-service
+  name: postgresql
 spec:
-  ports:
-    - port: 5432
   selector:
     app: postgresql
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
