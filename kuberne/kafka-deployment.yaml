@@ -25,7 +25,7 @@ spec:
             - name: CLUSTER_ID
               value: ZDFiZmU3ODUyMzRiNGI3NG
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: PLAINTEXT://localhost:9092,DOCKER_INTERNAL://kafka:29092
+              value: PLAINTEXT://kafka:9092,DOCKER_INTERNAL://kafka:29092
             - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
               value: "true"
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
