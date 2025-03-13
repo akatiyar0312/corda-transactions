@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+    kompose.version: 1.35.0 (HEAD)
+  labels:
+    io.kompose.service: corda
+  name: corda
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: corda
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+        kompose.version: 1.35.0 (HEAD)
+      labels:
+        io.kompose.service: corda
+    spec:
+      containers:
+        - args:
+            - -mbus.busType=KAFKA
+            - -mbootstrap.servers=kafka:29092
+            - -spassphrase=password
+            - -ssalt=salt
+            - -ddatabase.user=user
+            - -ddatabase.pass=password
+            - -ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster
+            - -ddatabase.jdbc.directory=/opt/jdbc-driver/
+          env:
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: ENABLE_LOG4J2_DEBUG
+              value: "false"
+            - name: JAVA_TOOL_OPTIONS
+              value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+            - name: LOG4J_CONFIG_FILE
+              value: config/log4j2.xml
+          image: corda/corda-os-combined-worker-kafka:5.2.0.0
+          name: corda
+          ports:
+            - containerPort: 8888
+              protocol: TCP
+            - containerPort: 7004
+              protocol: TCP
+            - containerPort: 5005
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /config
+              name: corda-claim0
+            - mountPath: /logs
+              name: corda-claim1
+      restartPolicy: Always
+      volumes:
+        - name: corda-claim0
+          persistentVolumeClaim:
+            claimName: corda-claim0
+        - name: corda-claim1
+          persistentVolumeClaim:
+            claimName: corda-claim1

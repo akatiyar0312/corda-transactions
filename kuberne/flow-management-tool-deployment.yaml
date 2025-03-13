@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+    kompose.version: 1.35.0 (HEAD)
+  labels:
+    io.kompose.service: flow-management-tool
+  name: flow-management-tool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: flow-management-tool
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+        kompose.version: 1.35.0 (HEAD)
+      labels:
+        io.kompose.service: flow-management-tool
+    spec:
+      containers:
+        - image: flow-management-tool
+          name: flow-management-tool
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+      restartPolicy: Always

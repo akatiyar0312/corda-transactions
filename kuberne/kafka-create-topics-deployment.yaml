@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+    kompose.version: 1.35.0 (HEAD)
+  labels:
+    io.kompose.service: kafka-create-topics
+  name: kafka-create-topics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kafka-create-topics
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f combined-worker-compose.yaml -o kuberne/
+        kompose.version: 1.35.0 (HEAD)
+      labels:
+        io.kompose.service: kafka-create-topics
+    spec:
+      containers:
+        - args:
+            - java
+            - -jar
+            - corda-cli.jar
+            - topic
+            - -b=kafka:29092
+            - create
+            - connect
+          image: openjdk:17-jdk
+          name: kafka-create-topics
+          volumeMounts:
+            - mountPath: /opt/corda-cli
+              name: C
+          workingDir: /opt/corda-cli
+      restartPolicy: Always
+      volumes:
+        - name: C
+          persistentVolumeClaim:
+            claimName: C
