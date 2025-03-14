@@ -27,11 +27,11 @@ spec:
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092"
             - name: KAFKA_ADVERTISED_LISTENERS
-                value: "PLAINTEXT://${POD_IP}:9092"
+              value: "PLAINTEXT://${POD_IP}:9092"  # ✅ Fixed Indentation
             - name: POD_IP
-                valueFrom:
-                  fieldRef:
-                    fieldPath: status.podIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
               value: "true"
           volumeMounts:
@@ -39,4 +39,4 @@ spec:
               mountPath: /var/lib/kafka/data
       volumes:
         - name: kafka-storage
-          emptyDir: {}
+          emptyDir: {}  # ✅ Still ephemeral, consider using a PersistentVolumeClaim
