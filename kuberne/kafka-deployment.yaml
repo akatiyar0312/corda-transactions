@@ -19,6 +19,7 @@ spec:
           image: confluentinc/cp-kafka:7.6.0
           ports:
             - containerPort: 9092
+            - containerPort: 9093  # Ensure this is exposed if using KRaft mode
           env:
             - name: KAFKA_NODE_ID
               value: "1"
@@ -27,11 +28,11 @@ spec:
             - name: KAFKA_PROCESS_ROLES
               value: "broker,controller"
             - name: KAFKA_LISTENERS
-              value: "PLAINTEXT://0.0.0.0:9092"
+              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka-service:9092"
+              value: "PLAINTEXT://kafka:9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "PLAINTEXT:PLAINTEXT"
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
               value: "1@kafka:9093"
             - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
