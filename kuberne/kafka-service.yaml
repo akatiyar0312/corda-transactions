@@ -1,12 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka
+  name: kafka-service
+  labels:
+    app: kafka
 spec:
-  type: ClusterIP  # Change to NodePort if external access is needed
-  ports:
-    - name: kafka
-      port: 9092
-      targetPort: 9092
   selector:
     app: kafka
+  ports:
+    - name: kafka-port
+      protocol: TCP
+      port: 9092
+      targetPort: 9092
+  type: ClusterIP
