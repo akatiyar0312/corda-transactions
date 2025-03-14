@@ -27,7 +27,11 @@ spec:
             - name: KAFKA_LISTENERS
               value: "PLAINTEXT://0.0.0.0:9092"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka-service:9092"
+                value: "PLAINTEXT://${POD_IP}:9092"
+            - name: POD_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
             - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
               value: "true"
           volumeMounts:
