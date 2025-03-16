@@ -8,10 +8,10 @@ data "google_client_config" "default" {}
 resource "google_container_cluster" "gke" {
   name     = "gke-cluster"
   location = "us-central1"
-  initial_node_count = 2
+  initial_node_count = 1  # Reduced node count to 1
   node_config {
-    machine_type = "e2-small"
-    disk_size_gb = 20
+    machine_type = "e2-micro"  # Reduced to e2-micro for minimal resource usage
+    disk_size_gb = 10  # Reduced disk size
   }
 }
 
@@ -83,12 +83,12 @@ resource "kubernetes_stateful_set" "postgres" {
           }
           resources {
             requests = {
-              cpu    = "250m"
-              memory = "256Mi"
+              cpu    = "100m"  # Reduced CPU request to 100m
+              memory = "128Mi"  # Reduced memory request to 128Mi
             }
             limits = {
-              cpu    = "500m"
-              memory = "512Mi"
+              cpu    = "250m"  # Reduced CPU limit to 250m
+              memory = "256Mi"  # Reduced memory limit to 256Mi
             }
           }
         }
@@ -125,8 +125,8 @@ resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
   }
   spec {
     scale_target_ref {
-      kind = "StatefulSet"
-      name = kubernetes_stateful_set.postgres.metadata[0].name
+      kind       = "StatefulSet"
+      name       = kubernetes_stateful_set.postgres.metadata[0].name
       api_version = "apps/v1"
     }
     min_replicas = 1
