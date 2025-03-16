@@ -5,25 +5,37 @@ provider "google" {
 
 data "google_client_config" "default" {}
 
+data "google_container_cluster" "gke" {
+  name     = google_container_cluster.gke.name
+  location = google_container_cluster.gke.location
+}
+
 resource "google_container_cluster" "gke" {
   name     = "gke-cluster"
   location = "us-central1"
-  initial_node_count = 1  # Reduced node count to 1
+  initial_node_count = 1
   node_config {
-    machine_type = "e2-micro"  # Reduced to e2-micro for minimal resource usage
-    disk_size_gb = 10  # Reduced disk size
+    machine_type = "e2-micro"
+    disk_size_gb = 10
   }
 }
 
 provider "kubernetes" {
-  host                   = google_container_cluster.gke.endpoint
+  host                   = "https://${data.google_container_cluster.gke.endpoint}"
   token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth.0.cluster_ca_certificate)
+  cluster_ca_certificate = base64decode(data.google_container_cluster.gke.master_auth[0].cluster_ca_certificate)
+}
+
+resource "kubernetes_namespace" "postgres" {
+  metadata {
+    name = "postgres"
+  }
 }
 
 resource "kubernetes_config_map" "postgres_config" {
   metadata {
-    name = "postgres-config"
+    name      = "postgres-config"
+    namespace = kubernetes_namespace.postgres.metadata[0].name
   }
   data = {
     POSTGRES_DB       = "corda_db"
@@ -34,7 +46,8 @@ resource "kubernetes_config_map" "postgres_config" {
 
 resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
   metadata {
-    name = "postgres-pvc"
+    name      = "postgres-pvc"
+    namespace = kubernetes_namespace.postgres.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -48,7 +61,8 @@ resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
 
 resource "kubernetes_stateful_set" "postgres" {
   metadata {
-    name = "postgres"
+    name      = "postgres"
+    namespace = kubernetes_namespace.postgres.metadata[0].name
   }
   spec {
     service_name = "postgres"
@@ -83,12 +97,12 @@ resource "kubernetes_stateful_set" "postgres" {
           }
           resources {
             requests = {
-              cpu    = "100m"  # Reduced CPU request to 100m
-              memory = "128Mi"  # Reduced memory request to 128Mi
+              cpu    = "100m"
+              memory = "128Mi"
             }
             limits = {
-              cpu    = "250m"  # Reduced CPU limit to 250m
-              memory = "256Mi"  # Reduced memory limit to 256Mi
+              cpu    = "250m"
+              memory = "256Mi"
             }
           }
         }
@@ -105,7 +119,8 @@ resource "kubernetes_stateful_set" "postgres" {
 
 resource "kubernetes_service" "postgres" {
   metadata {
-    name = "postgres"
+    name      = "postgres"
+    namespace = kubernetes_namespace.postgres.metadata[0].name
   }
   spec {
     selector = {
@@ -121,7 +136,8 @@ resource "kubernetes_service" "postgres" {
 
 resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
   metadata {
-    name = "postgres-hpa"
+    name      = "postgres-hpa"
+    namespace = kubernetes_namespace.postgres.metadata[0].name
   }
   spec {
     scale_target_ref {
