@@ -1,7 +1,9 @@
 provider "google" {
-  project = "your-gcp-project-id"
+  project = "trade-finance-453908"
   region  = "us-central1"
 }
+
+data "google_client_config" "default" {}
 
 resource "google_container_cluster" "gke" {
   name     = "gke-cluster"
