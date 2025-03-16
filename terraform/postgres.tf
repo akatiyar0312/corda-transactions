@@ -32,41 +32,16 @@ resource "kubernetes_namespace" "postgres" {
   }
 }
 
-resource "kubernetes_config_map" "postgres_config" {
-  metadata {
-    name      = "postgres-config"
-    namespace = kubernetes_namespace.postgres.metadata[0].name
-  }
-  data = {
-    POSTGRES_DB       = "corda_db"
-    POSTGRES_USER     = "corda_user"
-    POSTGRES_PASSWORD = "corda_password"
-  }
-}
-
-resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
-  metadata {
-    name      = "postgres-pvc"
-    namespace = kubernetes_namespace.postgres.metadata[0].name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "5Gi"
-      }
-    }
-  }
-}
-
-resource "kubernetes_stateful_set" "postgres" {
+resource "kubernetes_deployment" "postgres" {
   metadata {
     name      = "postgres"
     namespace = kubernetes_namespace.postgres.metadata[0].name
+    labels = {
+      app = "postgres"
+    }
   }
   spec {
-    service_name = "postgres"
-    replicas     = 1
+    replicas = 1
     selector {
       match_labels = {
         app = "postgres"
@@ -85,32 +60,26 @@ resource "kubernetes_stateful_set" "postgres" {
           port {
             container_port = 5432
           }
-          env_from {
-            config_map_ref {
-              name = kubernetes_config_map.postgres_config.metadata[0].name
-            }
+          env {
+            name  = "POSTGRES_DB"
+            value = "corda_db"
+          }
+          env {
+            name  = "POSTGRES_USER"
+            value = "corda_user"
+          }
+          env {
+            name  = "POSTGRES_PASSWORD"
+            value = "corda_password"
           }
           volume_mount {
             mount_path = "/var/lib/postgresql/data"
             name       = "postgres-storage"
-            sub_path   = "postgres"
-          }
-          resources {
-            requests = {
-              cpu    = "100m"
-              memory = "128Mi"
-            }
-            limits = {
-              cpu    = "250m"
-              memory = "256Mi"
-            }
           }
         }
         volume {
           name = "postgres-storage"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.postgres_pvc.metadata[0].name
-          }
+          empty_dir {}
         }
       }
     }
@@ -131,41 +100,5 @@ resource "kubernetes_service" "postgres" {
       target_port = 5432
     }
     type = "ClusterIP"
-  }
-}
-
-resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
-  metadata {
-    name      = "postgres-hpa"
-    namespace = kubernetes_namespace.postgres.metadata[0].name
-  }
-  spec {
-    scale_target_ref {
-      kind       = "StatefulSet"
-      name       = kubernetes_stateful_set.postgres.metadata[0].name
-      api_version = "apps/v1"
-    }
-    min_replicas = 1
-    max_replicas = 2
-    metric {
-      type = "Resource"
-      resource {
-        name  = "cpu"
-        target {
-          type                = "Utilization"
-          average_utilization = 70
-        }
-      }
-    }
-    metric {
-      type = "Resource"
-      resource {
-        name  = "memory"
-        target {
-          type                = "Utilization"
-          average_utilization = 75
-        }
-      }
-    }
   }
 }
