@@ -10,7 +10,8 @@ resource "google_container_cluster" "gke" {
   location = "us-central1"
   initial_node_count = 2
   node_config {
-    machine_type = "e2-medium"
+    machine_type = "e2-small"
+    disk_size_gb = 20
   }
 }
 
@@ -39,7 +40,7 @@ resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = "10Gi"
+        storage = "5Gi"
       }
     }
   }
@@ -82,12 +83,12 @@ resource "kubernetes_stateful_set" "postgres" {
           }
           resources {
             requests = {
-              cpu    = "500m"
-              memory = "512Mi"
+              cpu    = "250m"
+              memory = "256Mi"
             }
             limits = {
-              cpu    = "1000m"
-              memory = "1Gi"
+              cpu    = "500m"
+              memory = "512Mi"
             }
           }
         }
@@ -129,7 +130,7 @@ resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
       api_version = "apps/v1"
     }
     min_replicas = 1
-    max_replicas = 3
+    max_replicas = 2
     metric {
       type = "Resource"
       resource {
