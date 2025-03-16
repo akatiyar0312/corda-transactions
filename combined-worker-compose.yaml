@@ -36,7 +36,7 @@ services:
     depends_on:
       - kafka
     volumes:
-      - C:/Users/SinghSanskriti(DEVEL/Documents/Github/corda5-samples/corda-cli-installer-5.2.0.0:/opt/corda-cli
+      - :/opt/corda-cli
     working_dir: /opt/corda-cli
     command: [
       "java",
@@ -47,41 +47,3 @@ services:
       "create",
       "connect"
     ]
-
-  corda:
-    image: corda/corda-os-combined-worker-kafka:5.2.0.0
-    depends_on:
-      - postgresql
-      - kafka
-      - kafka-create-topics
-    volumes:
-      - ../config:/config
-      - ../logs:/logs
-    environment:
-      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
-      LOG4J_CONFIG_FILE: config/log4j2.xml
-      CONSOLE_LOG_LEVEL: info
-      ENABLE_LOG4J2_DEBUG: false
-    command: [
-      "-mbus.busType=KAFKA",
-      "-mbootstrap.servers=kafka:29092",
-      "-spassphrase=password",
-      "-ssalt=salt",
-      "-ddatabase.user=user",
-      "-ddatabase.pass=password",
-      "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
-      "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
-    ]
-    ports:
-      - 8888:8888
-      - 7004:7004
-      - 5005:5005
-
-  flow-management-tool:
-    depends_on:
-      - corda
-    build:
-      context: ../FlowManagementUI
-      dockerfile: Dockerfile
-    ports:
-      - 5000:5000
