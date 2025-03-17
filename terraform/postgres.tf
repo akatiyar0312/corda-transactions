@@ -1,24 +1,4 @@
-provider "google" {
-  project = "trade-finance-453908"
-  region  = "us-central1"
-}
-
-data "google_client_config" "default" {}
-
-resource "google_container_cluster" "gke" {
-  name     = "gke-cluster"
-  location = "us-central1"
-  initial_node_count = 2
-  node_config {
-    machine_type = "e2-medium"
-  }
-}
-
-provider "kubernetes" {
-  host                   = google_container_cluster.gke.endpoint
-  token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.gke.master_auth.0.cluster_ca_certificate)
-}
+# postgres.tf
 
 resource "kubernetes_config_map" "postgres_config" {
   metadata {
@@ -124,8 +104,8 @@ resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
   }
   spec {
     scale_target_ref {
-      kind = "StatefulSet"
-      name = kubernetes_stateful_set.postgres.metadata[0].name
+      kind       = "StatefulSet"
+      name       = kubernetes_stateful_set.postgres.metadata[0].name
       api_version = "apps/v1"
     }
     min_replicas = 1
