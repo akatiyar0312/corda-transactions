@@ -22,7 +22,7 @@ resource "google_container_cluster" "primary" {
 # Kubernetes provider configuration (use the correct GKE cluster)
 provider "kubernetes" {
   host                   = google_container_cluster.primary.endpoint
-  token                  = google_container_cluster.primary.master_auth[0].access_token
+  token                  = data.google_client_config.default.access_token  # This can be used directly
   cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
 }
 
