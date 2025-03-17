@@ -1,7 +1,7 @@
 provider "google" {
   project     = "ltc-hack-prj-24"  # Replace with your project ID
   region      = "us-central1"      # Replace with your preferred region
-  credentials = file("/path/to/your/service-account-key.json")  # Path to your service account key
+  credentials = file("/home/user93_lloyds/ltc-hack-prj-24-dffbb9e14fee.json")
 }
 
 # Create a Cloud SQL PostgreSQL instance
