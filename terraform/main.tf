@@ -15,13 +15,25 @@ resource "google_container_cluster" "primary" {
     machine_type = "e2-medium"
   }
 
+  network_policy {
+    enabled = true
+  }
+}
+
+resource "google_container_node_pool" "primary_pool" {
+  provider           = google
+  cluster            = google_container_cluster.primary.name
+  location           = google_container_cluster.primary.location
+  name               = "primary-node-pool"
+  initial_node_count = 1
+
   autoscaling {
     min_node_count = 1  # Minimum number of nodes
     max_node_count = 5  # Maximum number of nodes
   }
 
-  network_policy {
-    enabled = true
+  node_config {
+    machine_type = "e2-medium"
   }
 }
 
