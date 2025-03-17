@@ -1,14 +1,8 @@
-provider "google" {
-  project     = "ltc-hack-prj-24"
-  region      = "us-central1"
-  credentials = file("/home/user93_lloyds/ltc-hack-prj-24-dffbb9e14fee.json")
-}
-
 resource "google_container_cluster" "primary" {
   provider           = google
   name               = "gke-cluster"
-  location           = "us-central1-a"  # Change this to your preferred zone
-  initial_node_count = 1  # Start with 1 node
+  location           = "us-central1-a"
+  initial_node_count = 4  # Increase initial node count to 4
 
   node_config {
     machine_type = "e2-medium"
@@ -24,24 +18,15 @@ resource "google_container_node_pool" "primary_node_pool" {
   cluster             = google_container_cluster.primary.name
   location           = google_container_cluster.primary.location
   name                = "default-pool"
-  initial_node_count  = 1
+  initial_node_count  = 4  # Start with 4 nodes
 
   autoscaling {
-    min_node_count = 1  # Minimum number of nodes
-    max_node_count = 6  # Maximum number of nodes
+    min_node_count = 1
+    max_node_count = 6
+    target_cpu_utilization = 0.75  # Target average CPU utilization for scaling
   }
 
   node_config {
     machine_type = "e2-medium"
   }
 }
-
-# Kubernetes provider configuration (use the correct GKE cluster)
-provider "kubernetes" {
-  host                   = google_container_cluster.primary.endpoint
-  token                  = data.google_client_config.default.access_token  # This can be used directly
-  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
-}
-
-# Get the access token dynamically from the cluster
-data "google_client_config" "default" {}
