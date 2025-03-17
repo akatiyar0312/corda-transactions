@@ -1,15 +1,58 @@
-resource "kubernetes_namespace" "kafka" {
-  metadata {
-    name = "kafka"
+provider "google" {
+  project     = "ltc-hack-prj-24"  # Your GCP Project ID
+  region      = "us-central1"      # Your preferred region
+  credentials = file("/home/user93_lloyds/ltc-hack-prj-24-dffbb9e14fee.json")
+}
+
+provider "kubernetes" {
+  host                   = google_container_cluster.primary.endpoint
+  token                  = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
+}
+
+data "google_client_config" "default" {}
+
+# Define the GKE Cluster
+resource "google_container_cluster" "primary" {
+  name               = "gke-cluster"
+  location           = "us-central1-a"
+  initial_node_count = 3
+
+  node_config {
+    machine_type = "e2-medium"
+  }
+
+  network_policy {
+    enabled = true
   }
 }
 
-# Create PersistentVolumeClaims (PVC) for Kafka brokers
-resource "kubernetes_persistent_volume_claim" "kafka_pvc" {
-  count        = 3
+# Define the PersistentVolume for Kafka data storage
+resource "kubernetes_persistent_volume" "kafka_pv" {
   metadata {
-    name      = "kafka-pvc-${count.index}"
-    namespace = kubernetes_namespace.kafka.metadata[0].name
+    name = "kafka-pv"
+  }
+
+  spec {
+    capacity = {
+      storage = "10Gi"
+    }
+
+    access_modes = ["ReadWriteOnce"]
+
+    persistent_volume_reclaim_policy = "Retain"
+
+    host_path {
+      path = "/mnt/data/kafka"
+    }
+  }
+}
+
+# Define PersistentVolumeClaim for Kafka
+resource "kubernetes_persistent_volume_claim" "kafka_pvc" {
+  metadata {
+    name      = "kafka-pvc"
+    namespace = "default"
   }
 
   spec {
@@ -19,21 +62,20 @@ resource "kubernetes_persistent_volume_claim" "kafka_pvc" {
         storage = "10Gi"
       }
     }
-
-    volume_mode = "Filesystem"
   }
 }
 
-# Create StatefulSet for Kafka
+# Kafka StatefulSet Deployment
 resource "kubernetes_stateful_set" "kafka" {
   metadata {
-    name      = "kafka"
-    namespace = kubernetes_namespace.kafka.metadata[0].name
+    name = "kafka"
   }
 
   spec {
     service_name = "kafka"
-    replicas     = 3
+
+    replicas = 3
+
     selector {
       match_labels = {
         app = "kafka"
@@ -50,46 +92,44 @@ resource "kubernetes_stateful_set" "kafka" {
       spec {
         container {
           name  = "kafka"
-          image = "confluentinc/cp-kafka:7.6.0"
+          image = "confluentinc/cp-kafka:7.6.0"  # Kafka image
+          
           ports {
-            container_port = 9093
-          }
-
-          env {
-            name  = "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"
-            value = "PLAINTEXT:PLAINTEXT,DOCKER_INTERNAL:PLAINTEXT"
-          }
-
-          env {
-            name  = "KAFKA_LISTENER_NAMES"
-            value = "PLAINTEXT,DOCKER_INTERNAL"
-          }
-
-          env {
-            name  = "KAFKA_LISTENERS"
-            value = "PLAINTEXT://0.0.0.0:9092,DOCKER_INTERNAL://0.0.0.0:29092"
-          }
-
-          env {
-            name  = "KAFKA_ADVERTISED_LISTENERS"
-            value = "PLAINTEXT://localhost:9092,DOCKER_INTERNAL://kafka:29092"
-          }
-
-          env {
-            name  = "KAFKA_ZOOKEEPER_CONNECT"
-            value = "zookeeper:2181"
+            container_port = 9092
+            name           = "kafka"
           }
 
           volume_mount {
+            name      = "kafka-storage"
             mount_path = "/var/lib/kafka/data"
-            name       = "kafka-data"
+          }
+
+          environment {
+            name  = "KAFKA_ADVERTISED_LISTENERS"
+            value = "PLAINTEXT://localhost:9092"
+          }
+
+          environment {
+            name  = "KAFKA_LISTENERS"
+            value = "PLAINTEXT://0.0.0.0:9092"
+          }
+
+          environment {
+            name  = "KAFKA_LISTENER_SECURITY_PROTOCOL"
+            value = "PLAINTEXT"
+          }
+
+          environment {
+            name  = "KAFKA_ZOOKEEPER_CONNECT"
+            value = "zookeeper:2181"  # Assuming you have a Zookeeper service
           }
         }
 
         volume {
-          name = "kafka-data"
+          name = "kafka-storage"
+
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.kafka_pvc[count.index].metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim.kafka_pvc.metadata[0].name
           }
         }
       }
@@ -97,21 +137,84 @@ resource "kubernetes_stateful_set" "kafka" {
   }
 }
 
-# Create Service for Kafka
+# Define Kafka Service (Exposing the Kafka broker)
 resource "kubernetes_service" "kafka" {
   metadata {
-    name      = "kafka"
-    namespace = kubernetes_namespace.kafka.metadata[0].name
+    name = "kafka"
   }
 
   spec {
     selector = {
       app = "kafka"
     }
-    port {
+
+    ports {
       port        = 9092
       target_port = 9092
+      protocol    = "TCP"
     }
-    cluster_ip = "None"  # Required for StatefulSets
+
+    cluster_ip = "None"  # Headless service for StatefulSet
   }
+}
+
+# Zookeeper StatefulSet for Kafka
+resource "kubernetes_stateful_set" "zookeeper" {
+  metadata {
+    name = "zookeeper"
+  }
+
+  spec {
+    service_name = "zookeeper"
+    replicas     = 1
+    selector {
+      match_labels = {
+        app = "zookeeper"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "zookeeper"
+        }
+      }
+
+      spec {
+        container {
+          name  = "zookeeper"
+          image = "confluentinc/cp-zookeeper:7.6.0"  # Zookeeper image
+          ports {
+            container_port = 2181
+            name           = "zookeeper"
+          }
+        }
+      }
+    }
+  }
+}
+
+# Define Zookeeper Service (Exposing the Zookeeper)
+resource "kubernetes_service" "zookeeper" {
+  metadata {
+    name = "zookeeper"
+  }
+
+  spec {
+    selector = {
+      app = "zookeeper"
+    }
+
+    ports {
+      port        = 2181
+      target_port = 2181
+      protocol    = "TCP"
+    }
+
+    cluster_ip = "None"  # Headless service for StatefulSet
+  }
+}
+
+output "kafka_service_endpoint" {
+  value = kubernetes_service.kafka.cluster_ip
 }
