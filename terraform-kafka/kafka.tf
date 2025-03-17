@@ -48,7 +48,7 @@ resource "kubernetes_stateful_set" "kafka" {
       }
 
       spec {
-        containers {
+        container {
           name  = "kafka"
           image = "confluentinc/cp-kafka:7.6.0"
           ports {
@@ -80,13 +80,13 @@ resource "kubernetes_stateful_set" "kafka" {
             value = "zookeeper:2181"
           }
 
-          volume_mounts {
+          volume_mount {
             mount_path = "/var/lib/kafka/data"
             name       = "kafka-data"
           }
         }
 
-        volumes {
+        volume {
           name = "kafka-data"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim.kafka_pvc[count.index].metadata[0].name
@@ -108,8 +108,8 @@ resource "kubernetes_service" "kafka" {
     selector = {
       app = "kafka"
     }
-    ports {
-      port     = 9092
+    port {
+      port        = 9092
       target_port = 9092
     }
     cluster_ip = "None"  # Required for StatefulSets
