@@ -42,8 +42,10 @@ resource "kubernetes_persistent_volume" "kafka_pv" {
 
     persistent_volume_reclaim_policy = "Retain"
 
-    host_path {
-      path = "/mnt/data/kafka"
+    persistent_volume_source {
+      host_path {
+        path = "/mnt/data/kafka"
+      }
     }
   }
 }
@@ -104,22 +106,22 @@ resource "kubernetes_stateful_set" "kafka" {
             mount_path = "/var/lib/kafka/data"
           }
 
-          environment {
+          env {
             name  = "KAFKA_ADVERTISED_LISTENERS"
             value = "PLAINTEXT://localhost:9092"
           }
 
-          environment {
+          env {
             name  = "KAFKA_LISTENERS"
             value = "PLAINTEXT://0.0.0.0:9092"
           }
 
-          environment {
+          env {
             name  = "KAFKA_LISTENER_SECURITY_PROTOCOL"
             value = "PLAINTEXT"
           }
 
-          environment {
+          env {
             name  = "KAFKA_ZOOKEEPER_CONNECT"
             value = "zookeeper:2181"  # Assuming you have a Zookeeper service
           }
@@ -148,7 +150,7 @@ resource "kubernetes_service" "kafka" {
       app = "kafka"
     }
 
-    ports {
+    port {
       port        = 9092
       target_port = 9092
       protocol    = "TCP"
@@ -205,7 +207,7 @@ resource "kubernetes_service" "zookeeper" {
       app = "zookeeper"
     }
 
-    ports {
+    port {
       port        = 2181
       target_port = 2181
       protocol    = "TCP"
