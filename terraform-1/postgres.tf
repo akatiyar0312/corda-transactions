@@ -1,7 +1,7 @@
 provider "google" {
   project     = "ltc-hack-prj-24"  # Replace with your project ID
   region      = "us-central1"      # Replace with your preferred region
-  credentials = file("/home/user93_lloyds/ltc-hack-prj-24-dffbb9e14fee.json")
+  credentials = file("/home/user93_lloyds/ltc-hack-prj-24-dffbb9e14fee.json")  # Path to your service account key
 }
 
 # Create a Cloud SQL PostgreSQL instance
@@ -31,7 +31,7 @@ resource "google_sql_database_instance" "postgres_instance" {
 
     # Maintenance window configuration
     maintenance_window {
-      day          = 0  # Sunday
+      day          = 7  # Sunday (valid range: 1-7, where 7 is Sunday)
       hour         = 0  # Midnight UTC
       update_track = "stable"  # Can be "stable" or "canary"
     }
