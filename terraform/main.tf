@@ -14,6 +14,24 @@ resource "google_container_cluster" "primary" {
     machine_type = "e2-medium"
   }
 
+  # Enable the Cluster Autoscaler feature
+  node_pool {
+    name               = "default-pool"
+    initial_node_count = 1
+    min_count          = 1  # Minimum number of nodes
+    max_count          = 6  # Maximum number of nodes
+
+    autoscaling {
+      enabled = true
+      min_node_count = 1  # Minimum number of nodes in the pool
+      max_node_count = 6  # Maximum number of nodes in the pool
+    }
+
+    node_config {
+      machine_type = "e2-medium"
+    }
+  }
+
   network_policy {
     enabled = true
   }
