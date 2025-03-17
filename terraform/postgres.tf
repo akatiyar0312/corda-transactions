@@ -1,9 +1,12 @@
-# postgres.tf
+# Define Kubernetes resources for PostgreSQL
 
 resource "kubernetes_config_map" "postgres_config" {
+  depends_on = [google_container_cluster.primary, google_container_node_pool.primary_pool]
+
   metadata {
     name = "postgres-config"
   }
+
   data = {
     POSTGRES_DB       = "corda_db"
     POSTGRES_USER     = "corda_user"
@@ -12,9 +15,12 @@ resource "kubernetes_config_map" "postgres_config" {
 }
 
 resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
+  depends_on = [google_container_cluster.primary, google_container_node_pool.primary_pool]
+
   metadata {
     name = "postgres-pvc"
   }
+
   spec {
     access_modes = ["ReadWriteOnce"]
     resources {
@@ -26,9 +32,12 @@ resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
 }
 
 resource "kubernetes_stateful_set" "postgres" {
+  depends_on = [google_container_cluster.primary, google_container_node_pool.primary_pool]
+
   metadata {
     name = "postgres"
   }
+
   spec {
     service_name = "postgres"
     replicas     = 1
@@ -83,6 +92,8 @@ resource "kubernetes_stateful_set" "postgres" {
 }
 
 resource "kubernetes_service" "postgres" {
+  depends_on = [google_container_cluster.primary, google_container_node_pool.primary_pool]
+
   metadata {
     name = "postgres"
   }
@@ -99,13 +110,15 @@ resource "kubernetes_service" "postgres" {
 }
 
 resource "kubernetes_horizontal_pod_autoscaler" "postgres_hpa" {
+  depends_on = [google_container_cluster.primary, google_container_node_pool.primary_pool]
+
   metadata {
     name = "postgres-hpa"
   }
   spec {
     scale_target_ref {
-      kind       = "StatefulSet"
-      name       = kubernetes_stateful_set.postgres.metadata[0].name
+      kind        = "StatefulSet"
+      name        = kubernetes_stateful_set.postgres.metadata[0].name
       api_version = "apps/v1"
     }
     min_replicas = 1
