@@ -13,7 +13,7 @@ resource "google_container_cluster" "primary" {
   }
 }
 
-resource "google_container_node_pool" "primary_node_pool" {
+rresource "google_container_node_pool" "primary_node_pool" {
   provider            = google
   cluster             = google_container_cluster.primary.name
   location           = google_container_cluster.primary.location
@@ -23,10 +23,10 @@ resource "google_container_node_pool" "primary_node_pool" {
   autoscaling {
     min_node_count = 1
     max_node_count = 27
-    target_cpu_utilization = 0.75  # Target average CPU utilization for scaling
   }
 
   node_config {
     machine_type = "e2-medium"
   }
+
 }
