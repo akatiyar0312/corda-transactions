@@ -13,20 +13,24 @@ resource "google_container_cluster" "primary" {
   }
 }
 
-rresource "google_container_node_pool" "primary_node_pool" {
-  provider            = google
-  cluster             = google_container_cluster.primary.name
-  location           = google_container_cluster.primary.location
-  name                = "default-pool"
-  initial_node_count  = 6  # Start with 4 nodes
+resource "google_container_node_pool" "primary_node_pool" {
+  name       = "primary-node-pool"
+  cluster    = google_container_cluster.primary_cluster.name
+  location   = google_container_cluster.primary_cluster.location
+  node_count = 1
 
   autoscaling {
     min_node_count = 1
-    max_node_count = 27
+    max_node_count = 3
+    target_cpu_utilization = 0.75  # Target average CPU utilization for scaling
   }
 
   node_config {
-    machine_type = "e2-medium"
+    machine_type = "e2-medium"  # Specify the machine type here
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
   }
+
 
 }
