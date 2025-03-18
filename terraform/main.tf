@@ -2,7 +2,7 @@ resource "google_container_cluster" "primary" {
   provider           = google
   name               = "gke-cluster"
   location           = "us-central1-a"
-  initial_node_count = 6  # Increase initial node count to 4
+  initial_node_count = 6  # Initial node count for the cluster
 
   node_config {
     machine_type = "e2-medium"
@@ -15,14 +15,16 @@ resource "google_container_cluster" "primary" {
 
 resource "google_container_node_pool" "primary_node_pool" {
   name       = "primary-node-pool"
-  cluster    = google_container_cluster.primary_cluster.name
-  location   = google_container_cluster.primary_cluster.location
+  cluster    = google_container_cluster.primary.name
+  location   = google_container_cluster.primary.location
   node_count = 1
 
   autoscaling {
     min_node_count = 1
     max_node_count = 3
-    target_cpu_utilization = 0.75  # Target average CPU utilization for scaling
+    cpu_utilization {
+      target = 0.75  # Correct usage of the CPU target utilization
+    }
   }
 
   node_config {
@@ -31,6 +33,4 @@ resource "google_container_node_pool" "primary_node_pool" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
-
-
 }
